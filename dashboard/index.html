@@ -1118,7 +1118,7 @@ function renderOverview(main,fs,fe,rev,exp,net,P){
   /* Card was withdrawn as a tender option in the POS, so it is no longer a
      fixed row. Any method actually present in the data is still listed —
      including historic Card takings — so nothing drops out of the totals. */
-  const baseMethods=['Cash','GCash','GRAB/PANDA'];
+  const baseMethods=['Cash','GCash','Utang'];
   const seenMethods=[];
   fs.forEach(function(s){
     const k=s.method||'Cash';
@@ -1195,7 +1195,7 @@ function renderSales(main,fs,rev){
   fs.slice(0,100).forEach(function(s){
     const tr=document.createElement('tr');
     const items=(s.items||[]).map(function(i){return i.name+(i.qty>1?' x'+i.qty:'');}).join(', ').slice(0,40);
-    const mcls={Cash:'b-green',Card:'b-blue',GCash:'b-purple',GRAB/PANDA:'b-amber'}[s.method]||'b-gray';
+    const mcls={Cash:'b-green',Card:'b-blue',GCash:'b-purple',Utang:'b-amber'}[s.method]||'b-gray';
     tr.innerHTML='<td style="font-family:monospace;font-size:11px">'+esc(s.txn_id)+'</td><td>'+items+'</td><td style="white-space:nowrap;font-size:12px">'+fd(s.date)+'</td><td style="font-size:12px;color:var(--t3)">'+s.cashier+'</td><td><span class="badge '+mcls+'">'+esc(s.method)+'</span></td><td style="text-align:right;font-weight:700">'+fmt(s.total)+'</td>';
     tb.appendChild(tr);
   });
@@ -1711,7 +1711,7 @@ function renderCustomers(main){
   main.appendChild(subnav);
 
   if(UI.custView==='list'){
-    /* Customer list — same as before + edit/GRAB/PANDA */
+    /* Customer list — same as before + edit/utang */
     const c=el('div','card');
     const hd=el('div','card-hd','All customers');hd.appendChild(addBtn('+ Add customer',function(){UI.modal={type:'customer',item:null};render();}));c.appendChild(hd);
     D.customers.forEach(function(cust){
@@ -1721,7 +1721,7 @@ function renderCustomers(main){
       const rr=el('div','row-r');
       if(cust.credit_balance>0)rr.appendChild(el('span','badge b-red','Owes '+fmt(cust.credit_balance)));
       if(cust.points>0)rr.appendChild(el('span','badge b-blue',cust.points+' pts'));
-      const utBtn=el('button','sm-btn','GRAB/PANDA');utBtn.onclick=function(){UI.modal={type:'credit',item:cust};render();};
+      const utBtn=el('button','sm-btn','Utang');utBtn.onclick=function(){UI.modal={type:'credit',item:cust};render();};
       const edBtn=el('button','sm-btn','Edit');edBtn.onclick=function(){UI.modal={type:'customer',item:cust};render();};
       const ordBtn=el('button','sm-btn','Order');ordBtn.onclick=function(){
         UI.custView='order';UI.orderCustomer=cust;UI.orderCart=[];UI.orderSearch='';render();
@@ -1733,7 +1733,7 @@ function renderCustomers(main){
     main.appendChild(c);
     // Credit log
     if(D.credit&&D.credit.length){
-      const cc=el('div','card');cc.innerHTML='<div class="card-hd">Credit / GRAB/PANDA log</div>';
+      const cc=el('div','card');cc.innerHTML='<div class="card-hd">Credit / utang log</div>';
       const tbl=el('table','tbl','<thead><tr><th>Customer</th><th>Type</th><th>Note</th><th>Date</th><th style="text-align:right">Amount</th></tr></thead>');
       const tb=document.createElement('tbody');
       D.credit.slice(0,30).forEach(function(e){
@@ -3038,9 +3038,9 @@ function renderModal(root){
 
   } else if(m.type==='credit'){
     const cust=m.item;
-    box.appendChild(el('div','modal-title','GRAB/PANDA — '+esc(cust.name)));
+    box.appendChild(el('div','modal-title','Utang — '+esc(cust.name)));
     box.appendChild(el('div','','<div style="font-size:15px;font-weight:700;color:'+(cust.credit_balance>0?'var(--dt)':'var(--st)')+'">Balance: '+fmt(cust.credit_balance)+'</div>'));
-    mfField(box,'crType','Type','select','charge','',[ {v:'charge',l:'Charge (new GRAB/PANDA)'},{v:'payment',l:'Payment (collecting)'}]);
+    mfField(box,'crType','Type','select','charge','',[ {v:'charge',l:'Charge (new utang)'},{v:'payment',l:'Payment (collecting)'}]);
     mfField(box,'crAmt','Amount (PHP)','number','','0');
     mfField(box,'crNote','Note','text','','e.g. For groceries');
     modalBtns(box,close,async function(){
@@ -3048,7 +3048,7 @@ function renderModal(root){
       if(amt<=0){alert('Enter amount');return;}
       /* v7.7.1: both writes are checked and the button locks while they run.
          The ledger row and the balance are still two statements - a manual
-         GRAB/PANDA entry from the back office is rare enough that a retry is
+         utang entry from the back office is rare enough that a retry is
          acceptable, and the ledger is the record that matters - but a failure
          is no longer silent, and a double-tap can no longer charge twice.
 
@@ -3056,7 +3056,7 @@ function renderModal(root){
          Dashboard. Charges and points arising from a SALE are applied by the
          database now (arroyo_customer_apply), so the two paths never both
          touch the same figure for the same transaction. */
-      await runWrite('Record GRAB/PANDA entry',async function(){
+      await runWrite('Record utang entry',async function(){
         const led=await api('/rest/v1/credit_ledger',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({biz_id:SESSION.bizId,customer_id:cust.id,customer_name:cust.name,type,amount:amt,note:gv('crNote'),date:new Date().toISOString()})});
         if(led===null)return null;
         const nb=type==='charge'?cust.credit_balance+amt:Math.max(0,cust.credit_balance-amt);
