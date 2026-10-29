@@ -33,9 +33,7 @@ URLS
   Self-test: https://BRGYSISIG.github.io/BRGY-SISIG/selftest/
   Queue:     https://BRGYSISIG.github.io/BRGY-SISIG/queue/
 
-SIGN-IN
-  Owner email:    khevinmartinez13@gmail.com
-  Admin password: Admin123
+
   Business ID:    2baaaf5e-da82-50b3-8810-9fa9a897d24b
 
 Template version 7.11.0
